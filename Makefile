@@ -8,7 +8,7 @@ OBJDUMP8=aarch64-none-elf-objdump -maarch64
 all : $(BINS)
 
 clean :
-	rm -f *.o *.out *.tmp *.bin *.ds *.C armstubs.h bin2c *~
+	rm -f *.o *.out *.tmp *.bin *~
 
 %.o: %.S
 	$(CC8) -c $< -o $@
