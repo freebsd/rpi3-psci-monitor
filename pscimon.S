@@ -140,13 +140,11 @@ secondary_spin:
 	b	boot_kernel
 
 primary_cpu:
-	 bl	fixup_fdt_memory
-
 	ldr	w4, kernel_entry32
 	ldr	w0, dtb_ptr32
+	mov	x1, #RESERVE_SIZE
 
 boot_kernel:
-	mov	x1, #0
 	mov	x2, #0
 	mov	x3, #0
 	br	x4
@@ -256,129 +254,3 @@ psci_reset:
 	str	w2, [x0, #0x1c]
 loop:
 	b loop
-
-
-/*
- * Cut off 0x4000 bytes from the memory area
- */
-fixup_fdt_memory:
-	ldr	w0, dtb_ptr32
-
-	ldr	w1, [x0, #8]	/* off_dt_struct */
-	rev	w1, w1
-	ldr	w2, [x0, #12]	/* off_dt_strings */
-	rev	w2, w2
-
-	ldr	w10, =FDT_END
-	ldr	w11, =FDT_BEGIN_NODE
-	ldr	w12, =FDT_END_NODE
-	ldr	w13, =FDT_PROP
-	ldr	w14, =FDT_NOP
-	mov	w15, #0		/* depth level */
-	mov	w16, #0		/* is current node named "memory" ? */
-
-tokens_loop:
-	ldr	w3, [x0, x1]
-	rev	w3, w3
-	add	w1, w1, 4
-	cmp	w3, w10 /* FDT_END */
-	b.eq	done
-	cmp	w3, w14 /* FDT_NOP */
-	b.eq	tokens_loop
-	cmp	w3, w11 /* FDT_BEGIN_NODE ? */
-	b.eq	begin_node 
-	cmp	w3, w12 /* FDT_END_NODE ? */
-	b.eq	end_node 
-	cmp	w3, w13 /* FDT_PROP ? */
-	b.eq	property 
-	b	done
-
-begin_node:
-	add	w15, w15, #1
-	mov	w16, #0		/* is_memory_node = 0 */
-
-check_memory_name:
-	mov	w5, w1
-	/* check if name is "memory" */
-	ldr	w6, [x0, x5]
-	ldr	w7, =STR_MEMO
-	cmp	w6, w7
-	b.ne	skip_name
-	add	x5, x5, 4
-	ldr	w6, [x0, x5]
-	ldr	w7, =STR_RY
-	cmp	w6, w7
-	b.ne	skip_name
-	mov	w16, w1		/* is_memory_node = <token_addr> */
-skip_name:
-	mov	w5, w1
-name_loop:
-	ldrb	w6, [x0, x5]
-	add	w5, w5, #1
-	cmp	w6, #0
-	b.ne	name_loop
-
-	add	w5, w5, #3 /* Align to next 32-bit boundary */
-	bic	w5, w5, #3
-	mov	w1, w5
-	b 	tokens_loop
-
-end_node:
-	sub	w15, w15, #1
-	mov	w16, #0		/* is_memory_node = 0 */
-	b       tokens_loop
-
-property:
-	ldr	w3, [x0, x1] /* len */
-	rev	w3, w3
-	add	w1, w1, 4
-	ldr	w4, [x0, x1] /* name off */
-	rev	w4, w4
-	add	w1, w1, 4
-	/*
-	 * check if the name is "reg"
-	 * name is not aligned, so load it byte by byte
-	 */
-	add	w4, w4, w2
-	ldr	w6, #0
-
-	ldrb	w5, [x0, x4]
-	add	w4, w4, 1
-	orr	w6, w5, w6, lsl #8
-	ldrb	w5, [x0, x4]
-	add	w4, w4, 1
-	orr	w6, w5, w6, lsl #8
-	ldrb	w5, [x0, x4]
-	add	w4, w4, 1
-	orr	w6, w5, w6, lsl #8
-	ldrb	w5, [x0, x4]
-	orr	w6, w5, w6, lsl #8
-	ldr	w5, =STR_REG
-	cmp	w5, w6
-	b.ne	not_memory_reg
-	cmp	w16, #0
-	b.eq	not_memory_reg
-	cmp	w15, #2
-	b.ne	not_memory_reg
-	/* OK, this is what we're looking for */
-	ldr	w5, [x0, x1]
-	rev	w5, w5
-	add	w5, w5, #RESERVE_SIZE
-	rev	w5, w5
-	str	w5, [x0, x1]
-	add	w1, w1, 4
-	ldr	w5, [x0, x1]
-	rev	w5, w5
-	sub	w5, w5, #RESERVE_SIZE
-	rev	w5, w5
-	str	w5, [x0, x1]
-
-not_memory_reg:
-	/* Align len */
-	add	w3, w3, #3
-	bic	w3, w3, #3
-	/* move to the next property */
-	add	w1, w1, w3
-	b	tokens_loop
-done:
-	ret
