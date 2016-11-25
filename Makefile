@@ -1,11 +1,17 @@
-.SUFFIXES: .S .o .elf .tmp .bin
+.SUFFIXES: .S .o .elf .tmp .bin .dts .dtbo
 
 CC8=aarch64-none-elf-gcc
 LD8=aarch64-none-elf-ld
 OBJCOPY8=aarch64-none-elf-objcopy
 OBJDUMP8=aarch64-none-elf-objdump -maarch64
+# Requires dtc with overlay support
+DTC=dtc
 
-all: pscimon.bin
+all: psci overlay
+
+overlay: psci.dtbo
+
+psci: pscimon.bin
 
 clean :
 	rm -f *.o *.out *.tmp *.bin *.elf *~
@@ -21,3 +27,6 @@ clean :
 
 .tmp.bin:
 	dd if=$< ibs=256 of=$@ conv=sync
+
+.dts.dtbo:
+	$(DTC)  -O dtb -o $@ -b 0 -@ $<
