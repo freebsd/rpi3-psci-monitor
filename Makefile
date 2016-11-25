@@ -1,23 +1,23 @@
-BINS=pscimon.bin
+.SUFFIXES: .S .o .elf .tmp .bin
 
 CC8=aarch64-none-elf-gcc
 LD8=aarch64-none-elf-ld
 OBJCOPY8=aarch64-none-elf-objcopy
 OBJDUMP8=aarch64-none-elf-objdump -maarch64
 
-all : $(BINS)
+all: pscimon.bin
 
 clean :
-	rm -f *.o *.out *.tmp *.bin *~
+	rm -f *.o *.out *.tmp *.bin *.elf *~
 
-%.o: %.S
+.S.o:
 	$(CC8) -c $< -o $@
 
-%.elf: %.o
+.o.elf:
 	$(LD8) --section-start=.text=0 $< -o $@
 
-%.tmp: %.elf
+.elf.tmp:
 	$(OBJCOPY8) $< -O binary $@
 
-%.bin: %.tmp
+.tmp.bin:
 	dd if=$< ibs=256 of=$@ conv=sync
