@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2016 Raspberry Pi (Trading) Ltd.
  * Copyright (c) 2016 Stephen Warren <swarren@wwwdotorg.org>
+ * Copyright (c) 2016 Oleksandr Tymoshenko <gonzo@freebsd.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
