@@ -140,6 +140,10 @@ secondary_spin:
 	b	boot_kernel
 
 primary_cpu:
+	mov	sp, #RESERVE_SIZE
+	sub	sp, sp, #16
+	ldr	w0, dtb_ptr32
+	bl	fixup_dt_blob
 	ldr	w4, kernel_entry32
 	ldr	w0, dtb_ptr32
 	mov	x1, #RESERVE_SIZE
