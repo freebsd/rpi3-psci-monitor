@@ -34,6 +34,14 @@
 #define	FDT_NOP		0x4             /* nop */
 #define	FDT_END		0x9
 
+/*
+ * Data below when applied to maib blob produces following device tree node
+ *   psci {
+ *       compatible      = "arm,psci-0.2";
+ *       method          = "smc";
+ *   };
+ */
+
 #define	PSCI_NODE_LEN			0x3C
 #define	PSCI_NODE_COMAPTIBLE_OFF	0x14
 #define	PSCI_NODE_METHOD_OFF		0x30
