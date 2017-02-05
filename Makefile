@@ -5,9 +5,7 @@ LD8=aarch64-none-elf-ld
 OBJCOPY8=aarch64-none-elf-objcopy
 OBJDUMP8=aarch64-none-elf-objdump -maarch64
 
-all: psci
-
-psci: pscimon.bin
+all: armstub8.bin
 
 clean :
 	rm -f *.o *.out *.tmp *.bin *.elf *~
@@ -27,5 +25,5 @@ clean :
 .tmp.bin:
 	dd if=$< ibs=256 of=$@ conv=sync
 
-pscimon.elf: pscimon.o fdtpatch.o
+armstub8.elf: pscimon.o fdtpatch.o
 	$(LD8) --section-start=.text=0 ${.ALLSRC} -o $@
