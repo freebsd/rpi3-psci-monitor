@@ -57,12 +57,15 @@ const unsigned char strings[] = {
 	'd', 0
 };
 
+typedef	unsigned int uint32_t;
+typedef	unsigned long long uint64_t;
+
+/* define to enable debug output */
+#undef DEBUG
+#ifdef DEBUG
 /* PL011 UART registers */
 #define	UART_DR		0x3f201000
 #define	UART_FR		0x3f201018
-
-typedef	unsigned int uint32_t;
-typedef	unsigned long long uint64_t;
 
 static inline void
 putc(char c)
@@ -88,6 +91,11 @@ puthex(uint64_t v)
 	for (int i = 60; i >= 0; i -= 4)
 		putc(hexdigits[(v >> i) & 0xf]);
 }
+#else /* DEBUG */
+#define	putc(arg) do {} while(0)
+#define	puts(arg) do {} while(0)
+#define	puthex(arg) do {} while(0)
+#endif /* DEBUG */
 
 static inline uint32_t
 bswap32(uint32_t v)
