@@ -173,6 +173,7 @@ dtb_ptr32:
 kernel_entry32:
 	.word 0x0
 
+.org 0x200
 .globl spin_table
 spin_table:
 	.quad 0 /* CPU0 mpentry */
