@@ -30,10 +30,12 @@
 
 #define BIT(x) (1 << (x))
 
-#define LOCAL_CONTROL		0x40000000
-#define LOCAL_PRESCALER		0x40000008
+#define LOCAL_CONTROL		0xff800000
+#define LOCAL_PRESCALER		0xff800008
+#define GIC_DISTB		0xff841000
+#define GIC_CPUB		0xff842000
 
-#define OSC_FREQ		19200000
+#define OSC_FREQ		54000000
 
 #define SCR_RW			BIT(10)
 #define SCR_HCE			BIT(8)
@@ -54,6 +56,14 @@
 #define SPSR_EL3_MODE_EL2H	9
 #define SPSR_EL3_VAL \
     (SPSR_EL3_D | SPSR_EL3_A | SPSR_EL3_I | SPSR_EL3_F | SPSR_EL3_MODE_EL2H)
+#define L2CTLR_EL1		S3_1_C11_C0_2
+
+
+#define GICC_CTRLR	0x0
+#define GICC_PMR	0x4
+#define IT_NR		0x8	// Number of interrupt enable registers (256 total irqs)
+#define GICD_CTRLR	0x0
+#define GICD_IGROUPR	0x80
 
 #define PSCI_VERSION		0x84000000
 #define PSCI_CPU_ON		0xC4000003
@@ -88,6 +98,12 @@ _start:
 	mov	w1, 0x80000000
 	str	w1, [x0, #(LOCAL_PRESCALER - LOCAL_CONTROL)]
 
+	/* Set L2 read/write cache latency to 2 */
+	mrs	x0, L2CTLR_EL1
+	mov	x1, #0x22
+	orr	x0, x0, x1
+	msr	L2CTLR_EL1, x0
+
 	/* Set up CNTFRQ_EL0 */
 	ldr	x0, =OSC_FREQ
 	msr	CNTFRQ_EL0, x0
@@ -108,6 +124,9 @@ _start:
 	mov	x0, #CPUECTLR_EL1_SMPEN
 	msr	CPUECTLR_EL1, x0
 
+#ifdef GIC
+        bl      setup_gic
+#endif
 	/*
 	 * Set up SCTLR_EL2
 	 * All set bits below are res1. LE, no WXN/I/SA/C/A/M
@@ -184,6 +203,32 @@ spin_table:
 	.quad 0 /* CPU2 mpentry arg */
 	.quad 0 /* CPU3 mpentry */
 	.quad 0 /* CPU3 mpentry arg */
+#ifdef GIC
+
+setup_gic:				// Called from secure mode - set all interrupts to group 1 and enable.
+	mrs	x0, MPIDR_EL1
+	ldr	x2, =GIC_DISTB
+	tst	x0, #0x3
+	b.eq	2f			// primary core
+
+	mov	w0, #3			// Enable group 0 and 1 IRQs from distributor
+	str	w0, [x2, #GICD_CTRLR]
+2:
+	add	x1, x2, #(GIC_CPUB - GIC_DISTB)
+	mov	w0, #0x1e7
+	str	w0, [x1, #GICC_CTRLR]	// Enable group 1 IRQs from CPU interface
+	mov	w0, #0xff
+	str	w0, [x1, #GICC_PMR]	// priority mask
+	add	x2, x2, #GICD_IGROUPR
+	mov	x0, #(IT_NR * 4)
+	mov	w1, #~0			// group 1 all the things
+3:
+	subs	x0, x0, #4
+	str	w1, [x2, x0]
+	b.ne	3b
+	ret
+
+#endif
 
 .align  11
 .globl  el3_exception_vectors
