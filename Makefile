@@ -11,7 +11,7 @@ clean :
 	rm -f *.o *.out *.tmp *.bin *.elf *~
 
 .S.o:
-	$(CC8) -c $< -o $@
+	$(CC8) -DGIC -c $< -o $@
 
 .c.o:
 	$(CC8) -fno-builtin -c $< -o $@
