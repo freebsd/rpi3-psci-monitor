@@ -30,12 +30,21 @@
 
 #define BIT(x) (1 << (x))
 
+#ifdef GIC
 #define LOCAL_CONTROL		0xff800000
 #define LOCAL_PRESCALER		0xff800008
+#else
+#define LOCAL_CONTROL		0x40000000
+#define LOCAL_PRESCALER		0x40000008
+#endif
 #define GIC_DISTB		0xff841000
 #define GIC_CPUB		0xff842000
 
+#ifdef GIC
 #define OSC_FREQ		54000000
+#else
+#define OSC_FREQ		19200000
+#endif
 
 #define SCR_RW			BIT(10)
 #define SCR_HCE			BIT(8)
@@ -98,7 +107,7 @@ _start:
 	mov	w1, 0x80000000
 	str	w1, [x0, #(LOCAL_PRESCALER - LOCAL_CONTROL)]
 
-	/* Set L2 read/write cache latency to 2 */
+	/* Set L2 read/write cache latency to 3 */
 	mrs	x0, L2CTLR_EL1
 	mov	x1, #0x22
 	orr	x0, x0, x1
